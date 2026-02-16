@@ -1,25 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mobile Security Cheat Sheet</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Security — Design Patterns</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a24;
-    --border: #2a2a3a;
-    --text: #e8e8f0;
-    --muted: #6b6b8a;
+    --bg: #0a0e1a;
+    --surface: #151d2e;
+    --surface2: #1a2235;
+    --border: #1e2d47;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
 
-    --tls:    #00f5c4;
-    --pin:    #ff6b6b;
-    --jwt:    #ffd93d;
-    --aes:    #6bcbff;
-    --rsa:    #c084fc;
-    --mqtt:   #fb923c;
+    --tls:    #00d4ff;
+    --pin:    #ef4444;
+    --jwt:    #f59e0b;
+    --aes:    #00d4ff;
+    --rsa:    #7c3aed;
+    --mqtt:   #f59e0b;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,7 +28,7 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Syne', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
     padding: 40px 24px 60px;
     overflow-x: hidden;
@@ -401,6 +402,21 @@
 </style>
 </head>
 <body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">{ patterns }</div>
+  <a href="../index.html#overview" onclick="setActive(this)">Overview</a>
+  <a href="../index.html#creational" onclick="setActive(this)">Creational</a>
+  <a href="../index.html#structural" onclick="setActive(this)">Structural</a>
+  <a href="../index.html#behavioral" onclick="setActive(this)">Behavioral</a>
+  <a href="../index.html#solid" onclick="setActive(this)">SOLID</a>
+  <a href="../index.html#architectural" onclick="setActive(this)">Architecture</a>
+  <a href="../index.html#cheatsheet" onclick="setActive(this)">Cheatsheet</a>
+  <a href="../index.html#quiz" onclick="setActive(this)">Quiz</a>
+  <a href="mobile-security.html" class="active">Mobile Security</a>
+</nav>
+
 <div class="wrap">
 
   <!-- HEADER -->
