@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Security Cheat Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+
+    --tls:    #00f5c4;
+    --pin:    #ff6b6b;
+    --jwt:    #ffd93d;
+    --aes:    #6bcbff;
+    --rsa:    #c084fc;
+    --mqtt:   #fb923c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+    overflow-x: hidden;
+  }
+
+  /* ── noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { text-align: center; margin-bottom: 56px; }
+
+  .kicker {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fff 30%, #6b6b8a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* glow blob */
+  .card::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: var(--accent);
+    border-radius: 50%;
+    opacity: 0.06;
+    filter: blur(30px);
+    pointer-events: none;
+  }
+
+  .card[data-c="tls"]  { --accent: var(--tls);  }
+  .card[data-c="pin"]  { --accent: var(--pin);  }
+  .card[data-c="jwt"]  { --accent: var(--jwt);  }
+  .card[data-c="aes"]  { --accent: var(--aes);  }
+  .card[data-c="rsa"]  { --accent: var(--rsa);  }
+  .card[data-c="mqtt"] { --accent: var(--mqtt); }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+
+  .card-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .analogy {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    font-style: italic;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .tag.no {
+    background: rgba(255,255,255,0.03);
+    color: var(--muted);
+    border-color: var(--border);
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  .warn {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: rgba(255, 107, 107, 0.07);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #ff9e9e;
+    margin-top: 14px;
+  }
+
+  .warn-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+  /* ── QUICK REF (bottom table) ── */
+  .quick-ref {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .quick-ref-head {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .quick-ref-head h2 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--tls);
+    animation: pulse 2s infinite;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr {
+    background: var(--surface2);
+  }
+
+  th {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 20px;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  td {
+    padding: 14px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .pill {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+  }
+
+  /* ── COMBO SECTION ── */
+  .combos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .combo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .combo-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .combo-name span { font-size: 18px; }
+
+  .combo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  /* ── 30-SEC BOX ── */
+  .quick-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    line-height: 2.2;
+  }
+
+  .quick-box h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .ql {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ql:last-child { border-bottom: none; }
+
+  .ql-key {
+    color: var(--muted);
+    min-width: 200px;
+    font-size: 12px;
+  }
+
+  .arrow { color: var(--muted); }
+
+  .ql-val { color: var(--text); font-weight: 700; }
+
+  /* ── SECTION TITLE ── */
+  .sec-title {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .card:nth-child(2) { animation-delay: 0.05s; }
+  .card:nth-child(3) { animation-delay: 0.10s; }
+  .card:nth-child(4) { animation-delay: 0.15s; }
+  .card:nth-child(5) { animation-delay: 0.20s; }
+  .card:nth-child(6) { animation-delay: 0.25s; }
+
+  .combo:nth-child(2) { animation-delay: 0.05s; }
+  .combo:nth-child(3) { animation-delay: 0.10s; }
+  .combo:nth-child(4) { animation-delay: 0.15s; }
+  .combo:nth-child(5) { animation-delay: 0.20s; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <p class="kicker">Mobile Development · Android & iOS</p>
+    <h1>Security Cheat Sheet</h1>
+    <p class="subtitle">TLS · SSL Pinning · JWT · AES · Public/Private Key · MQTT</p>
+  </header>
+
+  <!-- CARDS -->
+  <p class="sec-title">Concept Quick Reference</p>
+  <div class="grid">
+
+    <!-- TLS -->
+    <div class="card" data-c="tls">
+      <div class="card-head">
+        <div class="icon">🛡️</div>
+        <div>
+          <div class="card-title">TLS</div>
+          <div class="card-sub">Transport Layer Security</div>
+        </div>
+      </div>
+      <div class="analogy">Armored truck that carries your data between app and server.</div>
+      <div class="section-label">Use when</div>
+      <div class="tags">
+        <span class="tag">Every API call</span>
+        <span class="tag">Always on</span>
+        <span class="tag">HTTPS = TLS</span>
+      </div>
+      <div class="section-label">Skip when</div>
+      <div class="tags">
+        <span class="tag no">Never skip</span>
+      </div>
+      <div class="warn">
+        <span class="warn-icon">⚡</span>
+        <span>HTTP (no S) is never acceptable in production. Set <code>usesCleartextTraffic=false</code> on Android.</span>
+      </div>
+    </div>
+
+    <!-- SSL PINNING -->
+    <div class="card" data-c="pin">
+      <div class="card-head">
+        <div class="icon">📌</div>
+        <div>
+          <div class="card-title">SSL Pinning</div>
+          <div class="card-sub">Certificate Pinning</div>
+        </div>
+      </div>
+      <div class="analogy">Only accept deliveries from YOUR specific armored truck, reject all others.</div>
+      <div class="section-label">Use when</div>
+      <div class="tags">
+        <span class="tag">Banking / Fintech</span>
+        <span class="tag">Healthcare</span>
+        <span class="tag">You own the server</span>
+        <span class="tag">Enterprise apps</span>
+      </div>
+      <div class="section-label">Skip when</div>
+      <div class="tags">
+        <span class="tag no">Many 3rd-party APIs</span>
+        <span class="tag no">Public content apps</span>
+      </div>
+      <div class="warn">
+        <span class="warn-icon">⚡</span>
+        <span>Expired cert + no backup pin = app breaks for ALL users. Always pin a backup.</span>
+      </div>
+    </div>
+
+    <!-- JWT -->
+    <div class="card" data-c="jwt">
+      <div class="card-head">
+        <div class="icon">🎫</div>
+        <div>
+          <div class="card-title">JWT</div>
+          <div class="card-sub">JSON Web Token</div>
+        </div>
+      </div>
+      <div class="analogy">A stamped movie ticket that proves who you are without checking a database.</div>
+      <div class="section-label">Use when</div>
+      <div class="tags">
+        <span class="tag">User login / auth</span>
+        <span class="tag">Role-based access</span>
+        <span class="tag">Stateless APIs</span>
+        <span class="tag">Microservices</span>
+      </div>
+      <div class="section-label">Skip when</div>
+      <div class="tags">
+        <span class="tag no">No user accounts</span>
+        <span class="tag no">Need instant revoke</span>
+      </div>
+      <div class="warn">
+        <span class="warn-icon">⚡</span>
+        <span>Stolen JWTs can't be invalidated until expiry. Keep expiry short (15 min) + use refresh tokens.</span>
+      </div>
+    </div>
+
+    <!-- AES -->
+    <div class="card" data-c="aes">
+      <div class="card-head">
+        <div class="icon">🔐</div>
+        <div>
+          <div class="card-title">AES</div>
+          <div class="card-sub">Symmetric Encryption</div>
+        </div>
+      </div>
+      <div class="analogy">A combination lockbox — same key locks and unlocks. Fast, great for large data.</div>
+      <div class="section-label">Use when</div>
+      <div class="tags">
+        <span class="tag">Local sensitive data</span>
+        <span class="tag">Offline DB encryption</span>
+        <span class="tag">Encrypting files</span>
+        <span class="tag">Chat cache</span>
+      </div>
+      <div class="section-label">Skip when</div>
+      <div class="tags">
+        <span class="tag no">Data already in Keychain</span>
+        <span class="tag no">Non-sensitive prefs</span>
+      </div>
+      <div class="warn">
+        <span class="warn-icon">⚡</span>
+        <span>Always use AES-256-GCM mode. Never reuse IVs. Store keys in Android Keystore / iOS Secure Enclave.</span>
+      </div>
+    </div>
+
+    <!-- PUBLIC / PRIVATE KEY -->
+    <div class="card" data-c="rsa">
+      <div class="card-head">
+        <div class="icon">🗝️</div>
+        <div>
+          <div class="card-title">Public / Private Key</div>
+          <div class="card-sub">Asymmetric Encryption</div>
+        </div>
+      </div>
+      <div class="analogy">A padlock anyone can snap shut (public key), but only you have the key to open (private key).</div>
+      <div class="section-label">Use when</div>
+      <div class="tags">
+        <span class="tag">E2E encrypted chat</span>
+        <span class="tag">Digital signatures</span>
+        <span class="tag">Verify JWT signatures</span>
+        <span class="tag">Key exchange</span>
+      </div>
+      <div class="section-label">Skip when</div>
+      <div class="tags">
+        <span class="tag no">Encrypting large data</span>
+        <span class="tag no">Both parties = same app</span>
+      </div>
+      <div class="warn">
+        <span class="warn-icon">⚡</span>
+        <span>Too slow for big data. Use it to securely exchange an AES key, then encrypt data with AES (hybrid encryption).</span>
+      </div>
+    </div>
+
+    <!-- MQTT -->
+    <div class="card" data-c="mqtt">
+      <div class="card-head">
+        <div class="icon">📡</div>
+        <div>
+          <div class="card-title">MQTT</div>
+          <div class="card-sub">Message Queue Telemetry Transport</div>
+        </div>
+      </div>
+      <div class="analogy">A pub/sub postal system — subscribe to topics and get messages pushed to you instantly.</div>
+      <div class="section-label">Use when</div>
+      <div class="tags">
+        <span class="tag">Live chat / messaging</span>
+        <span class="tag">IoT / smart devices</span>
+        <span class="tag">Real-time tracking</span>
+        <span class="tag">Live dashboards</span>
+      </div>
+      <div class="section-label">Skip when</div>
+      <div class="tags">
+        <span class="tag no">One-time API calls</span>
+        <span class="tag no">Simple push notifs</span>
+        <span class="tag no">File uploads</span>
+      </div>
+      <div class="warn">
+        <span class="warn-icon">⚡</span>
+        <span>For push-only notifications, use FCM (Android) or APNs (iOS) instead. MQTT shines when devices also send data back.</span>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- QUICK REFERENCE TABLE -->
+  <p class="sec-title" style="margin-top:40px">Decision Table</p>
+  <div class="quick-ref">
+    <div class="quick-ref-head">
+      <div class="dot"></div>
+      <h2>What problem does it solve?</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Tech</th>
+          <th>Solves</th>
+          <th>Layer</th>
+          <th>Speed</th>
+          <th>Key type</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pill" style="--c: var(--tls)">TLS</span></td>
+          <td>Encrypts data in transit</td>
+          <td>Network</td>
+          <td>Fast</td>
+          <td>Asymmetric + Symmetric</td>
+        </tr>
+        <tr>
+          <td><span class="pill" style="--c: var(--pin)">SSL Pinning</span></td>
+          <td>Blocks fake server certs</td>
+          <td>Network</td>
+          <td>Negligible</td>
+          <td>Certificate hash</td>
+        </tr>
+        <tr>
+          <td><span class="pill" style="--c: var(--jwt)">JWT</span></td>
+          <td>Stateless user identity</td>
+          <td>Application</td>
+          <td>Fast</td>
+          <td>Signed (HS256 / RS256)</td>
+        </tr>
+        <tr>
+          <td><span class="pill" style="--c: var(--aes)">AES</span></td>
+          <td>Encrypts stored data</td>
+          <td>Storage</td>
+          <td>Very fast</td>
+          <td>Symmetric (same key)</td>
+        </tr>
+        <tr>
+          <td><span class="pill" style="--c: var(--rsa)">Pub / Priv Key</span></td>
+          <td>Key exchange + signatures</td>
+          <td>Application</td>
+          <td>Slow</td>
+          <td>Asymmetric (2 keys)</td>
+        </tr>
+        <tr>
+          <td><span class="pill" style="--c: var(--mqtt)">MQTT</span></td>
+          <td>Real-time pub/sub messaging</td>
+          <td>Protocol</td>
+          <td>Very fast</td>
+          <td>None (use with TLS)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- COMBO RECIPES -->
+  <p class="sec-title" style="margin-top:40px">App Type Recipes</p>
+  <div class="combos">
+
+    <div class="combo">
+      <div class="combo-name"><span>🏦</span> Banking / Fintech</div>
+      <div class="combo-chips">
+        <span class="chip" style="background:rgba(0,245,196,0.12);color:var(--tls)">TLS</span>
+        <span class="chip" style="background:rgba(255,107,107,0.12);color:var(--pin)">SSL Pinning</span>
+        <span class="chip" style="background:rgba(255,217,61,0.12);color:var(--jwt)">JWT (short expiry)</span>
+        <span class="chip" style="background:rgba(107,203,255,0.12);color:var(--aes)">AES (local)</span>
+        <span class="chip" style="background:rgba(192,132,252,0.12);color:var(--rsa)">Key signing</span>
+      </div>
+    </div>
+
+    <div class="combo">
+      <div class="combo-name"><span>💬</span> Chat App</div>
+      <div class="combo-chips">
+        <span class="chip" style="background:rgba(0,245,196,0.12);color:var(--tls)">TLS</span>
+        <span class="chip" style="background:rgba(255,217,61,0.12);color:var(--jwt)">JWT</span>
+        <span class="chip" style="background:rgba(251,146,60,0.12);color:var(--mqtt)">MQTT</span>
+        <span class="chip" style="background:rgba(192,132,252,0.12);color:var(--rsa)">E2E Keys</span>
+        <span class="chip" style="background:rgba(107,203,255,0.12);color:var(--aes)">AES cache</span>
+      </div>
+    </div>
+
+    <div class="combo">
+      <div class="combo-name"><span>🏃</span> Fitness Tracker</div>
+      <div class="combo-chips">
+        <span class="chip" style="background:rgba(0,245,196,0.12);color:var(--tls)">TLS</span>
+        <span class="chip" style="background:rgba(255,217,61,0.12);color:var(--jwt)">JWT</span>
+        <span class="chip" style="background:rgba(107,203,255,0.12);color:var(--aes)">AES (health data)</span>
+      </div>
+    </div>
+
+    <div class="combo">
+      <div class="combo-name"><span>🏠</span> Smart Home / IoT</div>
+      <div class="combo-chips">
+        <span class="chip" style="background:rgba(0,245,196,0.12);color:var(--tls)">TLS</span>
+        <span class="chip" style="background:rgba(255,217,61,0.12);color:var(--jwt)">JWT</span>
+        <span class="chip" style="background:rgba(251,146,60,0.12);color:var(--mqtt)">MQTT</span>
+        <span class="chip" style="background:rgba(107,203,255,0.12);color:var(--aes)">AES (device tokens)</span>
+      </div>
+    </div>
+
+    <div class="combo">
+      <div class="combo-name"><span>📰</span> News / Content</div>
+      <div class="combo-chips">
+        <span class="chip" style="background:rgba(0,245,196,0.12);color:var(--tls)">TLS only</span>
+      </div>
+    </div>
+
+    <div class="combo">
+      <div class="combo-name"><span>🏥</span> Healthcare</div>
+      <div class="combo-chips">
+        <span class="chip" style="background:rgba(0,245,196,0.12);color:var(--tls)">TLS</span>
+        <span class="chip" style="background:rgba(255,107,107,0.12);color:var(--pin)">SSL Pinning</span>
+        <span class="chip" style="background:rgba(255,217,61,0.12);color:var(--jwt)">JWT</span>
+        <span class="chip" style="background:rgba(107,203,255,0.12);color:var(--aes)">AES (PHI data)</span>
+        <span class="chip" style="background:rgba(192,132,252,0.12);color:var(--rsa)">Signatures</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 30 SECOND CHEAT -->
+  <p class="sec-title" style="margin-top:40px">30-Second Decision Guide</p>
+  <div class="quick-box">
+    <div class="ql">
+      <span class="ql-key">Every app, always</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--tls)">TLS</span>
+    </div>
+    <div class="ql">
+      <span class="ql-key">Users log in</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--jwt)">JWT</span>
+    </div>
+    <div class="ql">
+      <span class="ql-key">Sensitive data on device</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--aes)">AES-256-GCM</span>
+    </div>
+    <div class="ql">
+      <span class="ql-key">Own server + sensitive app</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--pin)">SSL Pinning</span>
+    </div>
+    <div class="ql">
+      <span class="ql-key">Real-time / IoT / chat</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--mqtt)">MQTT over TLS</span>
+    </div>
+    <div class="ql">
+      <span class="ql-key">Key exchange / E2E / signatures</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--rsa)">Public / Private Key</span>
+    </div>
+    <div class="ql">
+      <span class="ql-key">Encrypt big data with key pair</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--rsa)">RSA key</span>
+      <span class="arrow">→</span>
+      <span class="ql-val" style="color:var(--aes)">AES data</span>
+      <span style="color:var(--muted);font-size:11px;margin-left:8px">(hybrid)</span>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+</body>
+</html>
