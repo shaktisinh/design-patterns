@@ -38,8 +38,7 @@
   <a href="#solid" onclick="setActive(this)">SOLID</a>
   <a href="#architectural" onclick="setActive(this)">Architecture</a>
   <a href="#cheatsheet" onclick="setActive(this)">Cheatsheet</a>
-  <a href="#quiz" onclick="setActive(this)">Quiz</a>
-  <a href="pages/mobile-security.html">Mobile Security</a>
+  <a href="pages/mobile-security.html">Security</a>
   <a href="pages/performance-optimization.html">Performance</a>
 </nav>
 
@@ -1739,24 +1738,6 @@ viewModel.user.<span class="fn">collect</span> { state ->
         <tr><td>MVI/BLoC</td><td><span class="card-cat cat-arch">Architecture</span></td><td>Strict uni-directional data flow needed</td><td>Flutter BLoC, Compose + Orbit</td></tr>
       </tbody>
     </table>
-  </div>
-</section>
-
-<!-- QUIZ -->
-<section id="quiz">
-  <div class="section-header fade-in">
-    <span class="section-label">// test yourself</span>
-    <h2>🧠 Quick Quiz</h2>
-    <p class="section-desc">Solidify your knowledge. Get all 5 right!</p>
-  </div>
-  <div class="quiz-section fade-in">
-    <div id="quizContainer"></div>
-    <div class="quiz-nav">
-      <div class="quiz-progress" id="quizProgress">Question 1 / 5</div>
-      <div class="score-badge" id="scoreDisplay"></div>
-      <button class="quiz-btn" id="nextBtn" onclick="nextQuestion()" style="display:none">Next →</button>
-      <button class="quiz-btn" id="restartBtn" onclick="restartQuiz()" style="display:none">Restart 🔄</button>
-    </div>
   </div>
 </section>
 

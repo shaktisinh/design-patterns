@@ -153,27 +153,28 @@
 
   /* ── CARD ── */
   .card {
-    background: var(--surface);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 24px;
     position: relative;
     overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s;
+    transition: all 0.3s ease;
     animation: fadeUp 0.5s ease both;
   }
 
   .card:hover {
-    transform: translateY(-3px);
-    border-color: var(--accent);
+    transform: translateY(-5px);
+    border-color: #06b6d4;
+    box-shadow: 0 20px 40px rgba(6, 182, 212, 0.1);
   }
 
   .card::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--accent);
+    height: 4px;
+    background: linear-gradient(90deg, #06b6d4 0%, #8b5cf6 50%, #f87171 100%);
     border-radius: 16px 16px 0 0;
   }
 
@@ -183,17 +184,27 @@
     position: absolute;
     top: -40px; right: -40px;
     width: 120px; height: 120px;
-    background: var(--accent);
+    background: linear-gradient(135deg, #06b6d4, #8b5cf6);
     border-radius: 50%;
-    opacity: 0.06;
+    opacity: 0.08;
     filter: blur(30px);
     pointer-events: none;
+  }
+
+  .card-head {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .card-title {
     font-size: 18px;
     font-weight: 700;
-    color: var(--text);
+    background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 8px;
     position: relative;
     z-index: 1;
@@ -205,12 +216,42 @@
     display: block;
   }
 
-  .card-content {
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--muted);
+  .card-body {
     position: relative;
     z-index: 1;
+  }
+
+  .rule-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+  }
+
+  .rule-item:last-child {
+    border-bottom: none;
+  }
+
+  .rule-dot {
+    color: #06b6d4;
+    font-weight: bold;
+    min-width: 16px;
+    margin-top: 2px;
+  }
+
+  .rule-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .rule-text strong {
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  .rule-badges {
+    margin-top: 8px;
   }
 
   /* ── SECTION ── */
@@ -218,11 +259,41 @@
     margin-bottom: 48px;
   }
 
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .section-num {
+    font-size: 48px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    min-width: 60px;
+  }
+
   .section-title {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 700;
-    margin-bottom: 24px;
-    color: var(--text);
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
   }
 
   /* ── COLUMNS ── */
@@ -311,16 +382,17 @@
   }
 
   table thead {
-    background: var(--surface2);
+    background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
   }
 
   table th {
     padding: 14px;
     text-align: left;
-    font-weight: 600;
-    color: var(--text);
-    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    color: #fff;
+    border-bottom: 2px solid #06b6d4;
     vertical-align: middle;
+    letter-spacing: 0.05em;
   }
 
   table td {
@@ -330,21 +402,34 @@
     vertical-align: top;
   }
 
+  table tbody tr {
+    transition: background 0.2s ease;
+  }
+
   table tbody tr:hover {
-    background: var(--surface2);
+    background: linear-gradient(90deg, var(--surface2) 0%, rgba(6, 182, 212, 0.05) 100%);
+  }
+
+  table tbody tr:nth-child(even) {
+    background: rgba(6, 182, 212, 0.02);
   }
 
   table tbody tr:last-child td {
     border-bottom: none;
   }
 
+  .tools-table thead {
+    background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  }
+
   .tools-table .category-header {
-    background: var(--surface2);
+    background: linear-gradient(90deg, var(--surface2) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-left: 4px solid #8b5cf6;
   }
 
   .tools-table .category-header td {
     font-weight: 700;
-    color: var(--muted);
+    color: #8b5cf6;
     padding: 12px 14px;
     text-transform: uppercase;
     font-size: 12px;
@@ -355,7 +440,7 @@
     font-weight: 700;
     width: 120px;
     white-space: nowrap;
-    color: var(--text);
+    color: #06b6d4;
   }
 
   .tools-table td:not(.tool-title) {
@@ -364,14 +449,18 @@
 
   .tools-table strong {
     display: block;
-    color: var(--text);
-    font-weight: 600;
+    color: #10b981;
+    font-weight: 700;
     margin-bottom: 4px;
   }
 
   .tools-table small {
     color: var(--muted);
     font-size: 13px;
+  }
+
+  .metric-table thead {
+    background: linear-gradient(135deg, #f87171 0%, #eab308 100%);
   }
 
   .metric-table th,
@@ -384,44 +473,46 @@
     font-weight: 600;
     width: 140px;
     white-space: nowrap;
+    color: #06b6d4;
   }
 
   .metric-table .target {
     display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 700;
     font-size: 12px;
     font-family: 'Space Mono', monospace;
   }
 
   .metric-table .target.green {
-    background: rgba(16, 185, 129, 0.1);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
     color: #10b981;
+    border-left: 3px solid #10b981;
   }
 
   .metric-table .target.amber {
-    background: rgba(234, 179, 8, 0.1);
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.2) 0%, rgba(234, 179, 8, 0.05) 100%);
     color: #eab308;
+    border-left: 3px solid #eab308;
   }
 
   .metric-table .target.red {
-    background: rgba(248, 113, 113, 0.1);
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0.05) 100%);
     color: #f87171;
+    border-left: 3px solid #f87171;
   }
 
-  /* ── PROBLEM SOLUTION TABLE ── */
-  .problem-solution-table {
-    width: 100%;
+  .problem-solution-table thead {
+    background: linear-gradient(135deg, #9664ff 0%, #64c8ff 100%);
   }
 
   .problem-solution-table th {
     padding: 14px;
     text-align: left;
-    font-weight: 600;
-    color: var(--text);
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
+    font-weight: 700;
+    color: #fff;
+    border-bottom: 2px solid #9664ff;
   }
 
   .problem-solution-table th:first-child {
@@ -439,8 +530,8 @@
   }
 
   .problem-solution-table td:first-child {
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 700;
+    color: #64c8ff;
     width: 35%;
   }
 
@@ -451,11 +542,85 @@
   }
 
   .problem-solution-table tbody tr:hover {
-    background: var(--surface2);
+    background: linear-gradient(90deg, var(--surface2) 0%, rgba(150, 100, 255, 0.05) 100%);
+  }
+
+  .problem-solution-table tbody tr:nth-child(even) {
+    background: rgba(150, 100, 255, 0.02);
   }
 
   .problem-solution-table tbody tr:last-child td {
     border-bottom: none;
+  }
+
+  /* ── NAVIGATION ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
+    border-bottom: 2px solid var(--border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .nav-container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+  }
+
+  .nav-logo {
+    font-size: 18px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+  }
+
+  .nav-logo:hover {
+    transform: scale(1.05);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-link {
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .nav-link:hover {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: #06b6d4;
+    color: #06b6d4;
+  }
+
+  .nav-link.active {
+    background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+    color: #fff;
+    border-color: #06b6d4;
   }
 
   /* ── ANIMATIONS ── */
@@ -500,6 +665,20 @@
 </style>
 </head>
 <body>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">{ patterns }</div>
+  <a href="../index.html#overview" onclick="setActive(this)">Overview</a>
+  <a href="../index.html#creational" onclick="setActive(this)">Creational</a>
+  <a href="../index.html#structural" onclick="setActive(this)">Structural</a>
+  <a href="../index.html#behavioral" onclick="setActive(this)">Behavioral</a>
+  <a href="../index.html#solid" onclick="setActive(this)">SOLID</a>
+  <a href="../index.html#architectural" onclick="setActive(this)">Architecture</a>
+  <a href="../index.html#cheatsheet" onclick="setActive(this)">Cheatsheet</a>
+  <a href="mobile-security.html">Security</a>
+  <a href="performance-optimization.html" class="active">Performance</a>
+</nav>
+
 <div class="page">
 
   <!-- MASTHEAD -->
