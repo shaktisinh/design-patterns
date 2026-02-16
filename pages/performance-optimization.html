@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Performance Optimization — Design Patterns</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #151d2e;
+    --surface2: #1a2235;
+    --border: #1e2d47;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+
+    --perf:    #06b6d4;
+    --memory:  #8b5cf6;
+    --battery: #eab308;
+    --network: #10b981;
+    --render:  #f87171;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+    overflow-x: hidden;
+  }
+
+  /* ── noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { text-align: center; margin-bottom: 56px; }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 40px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+
+  .masthead h1 {
+    font-size: clamp(40px, 8vw, 72px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fff 30%, #6b6b8a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .masthead h1 em {
+    display: inline;
+    font-style: italic;
+    font-weight: 900;
+  }
+
+  .masthead-sub {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: inline-flex;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .badge.and {
+    background: rgba(30, 200, 120, 0.2);
+    color: #1ec878;
+    border: 1px solid rgba(30, 200, 120, 0.3);
+  }
+
+  .badge.ios {
+    background: rgba(100, 200, 255, 0.2);
+    color: #64c8ff;
+    border: 1px solid rgba(100, 200, 255, 0.3);
+  }
+
+  .badge.flu {
+    background: rgba(100, 150, 255, 0.2);
+    color: #6496ff;
+    border: 1px solid rgba(100, 150, 255, 0.3);
+  }
+
+  .badge.rn {
+    background: rgba(150, 100, 255, 0.2);
+    color: #9664ff;
+    border: 1px solid rgba(150, 100, 255, 0.3);
+  }
+
+  .badge.all {
+    background: rgba(200, 150, 100, 0.2);
+    color: #d4a574;
+    border: 1px solid rgba(200, 150, 100, 0.3);
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* glow blob */
+  .card::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: var(--accent);
+    border-radius: 50%;
+    opacity: 0.06;
+    filter: blur(30px);
+    pointer-events: none;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .card-content {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--text);
+  }
+
+  /* ── COLUMNS ── */
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .cols4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .badge.perf { background: rgba(6, 182, 212, 0.15); color: var(--perf); border: 1px solid rgba(6, 182, 212, 0.3); }
+  .badge.memory { background: rgba(139, 92, 246, 0.15); color: var(--memory); border: 1px solid rgba(139, 92, 246, 0.3); }
+  .badge.battery { background: rgba(235, 179, 8, 0.15); color: var(--battery); border: 1px solid rgba(235, 179, 8, 0.3); }
+  .badge.network { background: rgba(16, 185, 129, 0.15); color: var(--network); border: 1px solid rgba(16, 185, 129, 0.3); }
+  .badge.render { background: rgba(248, 113, 113, 0.15); color: var(--render); border: 1px solid rgba(248, 113, 113, 0.3); }
+
+  /* ── METRIC ── */
+  .metric {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .metric-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* ── LIST ── */
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    padding: 8px 0 8px 24px;
+    position: relative;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+  }
+
+  code {
+    background: var(--surface2);
+    color: var(--perf);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* ── TABLES ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  table thead {
+    background: var(--surface2);
+  }
+
+  table th {
+    padding: 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  table td {
+    padding: 16px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  table tbody tr:hover {
+    background: var(--surface2);
+  }
+
+  table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .tools-table .category-header {
+    background: var(--surface2);
+  }
+
+  .tools-table .category-header td {
+    font-weight: 700;
+    color: var(--muted);
+    padding: 12px 14px;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .tools-table .tool-title {
+    font-weight: 700;
+    width: 120px;
+    white-space: nowrap;
+    color: var(--text);
+  }
+
+  .tools-table td:not(.tool-title) {
+    line-height: 1.5;
+  }
+
+  .tools-table strong {
+    display: block;
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .tools-table small {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .metric-table th,
+  .metric-table td {
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  .metric-table td:first-child {
+    font-weight: 600;
+    width: 140px;
+    white-space: nowrap;
+  }
+
+  .metric-table .target {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .metric-table .target.green {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+
+  .metric-table .target.amber {
+    background: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+  }
+
+  .metric-table .target.red {
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+  }
+
+  /* ── PROBLEM SOLUTION TABLE ── */
+  .problem-solution-table {
+    width: 100%;
+  }
+
+  .problem-solution-table th {
+    padding: 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .problem-solution-table th:first-child {
+    width: 35%;
+  }
+
+  .problem-solution-table th:last-child {
+    width: 65%;
+  }
+
+  .problem-solution-table td {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .problem-solution-table td:first-child {
+    font-weight: 600;
+    color: var(--text);
+    width: 35%;
+  }
+
+  .problem-solution-table td:last-child {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .problem-solution-table tbody tr:hover {
+    background: var(--surface2);
+  }
+
+  .problem-solution-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .section {
+    animation: fadeIn 0.5s ease both;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .cols2, .cols3, .cols4 {
+      grid-template-columns: 1fr;
+    }
+
+    body {
+      padding: 24px 16px 40px;
+    }
+
+    .masthead {
+      padding: 24px;
+    }
+
+    .legend {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <h1>Mobile Performance Optimization </h1>
+    <p class="masthead-sub">Android · iOS · Flutter · React Native — Tools, Techniques & Targets</p>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.1em;margin-right:4px">Platforms →</span>
+    <div class="legend-item"><span class="badge and">Android</span></div>
+    <div class="legend-item"><span class="badge ios">iOS</span></div>
+    <div class="legend-item"><span class="badge flu">Flutter</span></div>
+    <div class="legend-item"><span class="badge rn">React Native</span></div>
+    <div class="legend-item"><span class="badge all">All</span></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 1 — PROFILING TOOLS
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div>
+        <div class="section-title">Profiling Tools</div>
+        <div class="section-desc">Know your weapon before you fight the battle — always profile before optimizing</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="padding: 0;">
+        <table class="tools-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th><div class="dot and-dot"></div>Android</th>
+              <th><div class="dot ios-dot"></div>iOS</th>
+              <th><div class="dot flu-dot"></div>Flutter</th>
+              <th><div class="dot rn-dot"></div>React Native</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- CPU & Performance -->
+            <tr class="category-header">
+              <td colspan="5">CPU & Performance</td>
+            </tr>
+            <tr>
+              <td class="tool-title">CPU Profiling</td>
+              <td><strong>Android Profiler</strong><br><small>CPU, memory, network & battery in Android Studio. Method traces & call stacks.</small></td>
+              <td><strong>Instruments — Time Profiler</strong><br><small>Xcode tool. Sample CPU usage per thread over time. Find hot functions.</small></td>
+              <td><strong>Flutter DevTools — CPU Profiler</strong><br><small>Flame charts of Dart isolate. Identify expensive build/paint methods.</small></td>
+              <td><strong>Flipper — Hermes Debugger</strong><br><small>JS CPU profiling via Chrome DevTools. Hermes bytecode inspection.</small></td>
+            </tr>
+
+            <!-- Memory -->
+            <tr class="category-header">
+              <td colspan="5">Memory</td>
+            </tr>
+            <tr>
+              <td class="tool-title">Memory Profiling</td>
+              <td><strong>Memory Profiler</strong><br><small>Heap dumps, allocations, GC events. Detect leaks with leak-canary integration.</small></td>
+              <td><strong>Instruments — Leaks + Allocations</strong><br><small>Detect retain cycles, abandoned memory, zombie objects. ARC leak finder.</small></td>
+              <td><strong>Flutter DevTools — Memory</strong><br><small>Dart heap snapshot. Track object allocations & GC pressure over time.</small></td>
+              <td><strong>Flipper — Memory Plugin</strong><br><small>Native heap via Android/iOS. JS heap via Hermes. Spot regressions fast.</small></td>
+            </tr>
+
+            <!-- Rendering -->
+            <tr class="category-header">
+              <td colspan="5">Rendering & UI</td>
+            </tr>
+            <tr>
+              <td class="tool-title">Rendering Analysis</td>
+              <td><strong>GPU Profiler / gfxinfo</strong><br><small><code>adb shell dumpsys gfxinfo</code> — frame times, jank %, janky frames histogram.</small></td>
+              <td><strong>Core Animation Instrument</strong><br><small>FPS overlay, off-screen rendering, blended layers, misaligned images.</small></td>
+              <td><strong>Flutter DevTools — Timeline</strong><br><small>UI thread + GPU thread frame timeline. Spot jank, shader compilation, rebuild counts.</small></td>
+              <td><strong>Perf Monitor (Metro overlay)</strong><br><small>On-device FPS + JS/UI thread meters. Shake device → Show Perf Monitor.</small></td>
+            </tr>
+
+            <!-- Network -->
+            <tr class="category-header">
+              <td colspan="5">Network</td>
+            </tr>
+            <tr>
+              <td class="tool-title">Network Analysis</td>
+              <td><strong>Network Profiler</strong><br><small>Request timeline, payload size, response time in Android Studio.</small></td>
+              <td><strong>Instruments — Network</strong><br><small>HTTP traffic, DNS lookups, TCP connections with timing breakdown.</small></td>
+              <td><strong>DevTools — Network tab</strong><br><small>HTTP timeline with request/response body inspection inside DevTools.</small></td>
+              <td><strong>Flipper — Network Inspector</strong><br><small>All HTTP/S traffic. Request/response body, headers, timing. Works on device.</small></td>
+            </tr>
+
+            <!-- Layout / Widget -->
+            <tr class="category-header">
+              <td colspan="5">Layout & Widget Inspection</td>
+            </tr>
+            <tr>
+              <td class="tool-title">Hierarchy Inspection</td>
+              <td><strong>Layout Inspector</strong><br><small>Live 3D view of view hierarchy. Find overdraw, deep nesting, measure count.</small></td>
+              <td><strong>View Hierarchy Debugger</strong><br><small>Xcode's live view hierarchy. Off-screen renders highlighted in red.</small></td>
+              <td><strong>DevTools — Widget Inspector</strong><br><small>Widget tree + render tree. Highlight repaints, show widget stats, slow animation mode.</small></td>
+              <td><strong>React DevTools</strong><br><small>Component tree, props, re-render highlighting. Standalone app or browser ext.</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tip-row">
+      <span>✦</span>
+      <span><strong>Golden rule:</strong> Always profile on a real device in release mode (or profile mode for Flutter). Emulator/simulator results are misleading — especially for GPU and memory.</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 2 — RENDERING PERFORMANCE
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <div>
+        <div class="section-title">Rendering Performance</div>
+        <div class="section-desc">60fps = 16ms per frame budget. 90/120fps devices shrink this to 11ms / 8ms</div>
+      </div>
+    </div>
+
+    <div class="cols2">
+      <!-- Android -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon">🤖</div>
+          <div class="card-title">Android</div>
+          <span class="badge and">Android</span>
+        </div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>ConstraintLayout</strong> — flat hierarchy beats nested LinearLayouts</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>RecyclerView</strong> with DiffUtil — never use ListView for long lists</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>overdraw</strong> — remove background on parent when child fills it</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>ViewHolder pattern</strong> strictly in RecyclerView adapters</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Hardware acceleration</strong> enabled by default — avoid canvas operations that disable it</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>Jetpack Compose</strong> — smart recomposition only redraws changed state</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Run animations on <strong>RenderThread</strong> — never block main thread during animations</div></div>
+        </div>
+      </div>
+
+      <!-- iOS -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon">🍎</div>
+          <div class="card-title">iOS</div>
+          <span class="badge ios">iOS</span>
+        </div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>opaque = false</strong> on UIViews unless necessary — causes blended layer cost</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>UITableView/UICollectionView</strong> cell reuse — never create cells without dequeue</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>shouldRasterize</strong> on static layers — cache complex layer composites as bitmap</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>cornerRadius on layers</strong> with masks — use pre-rendered rounded images instead</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>SwiftUI</strong> body recomputes only for changed state — mark views with <code>Equatable</code></div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>drawRect</strong> sparingly — prefer CALayer for GPU-accelerated compositing</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Async image decoding</strong> — decode off main thread, never block UI thread with image ops</div></div>
+        </div>
+      </div>
+
+      <!-- Flutter -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon">💙</div>
+          <div class="card-title">Flutter</div>
+          <span class="badge flu">Flutter</span>
+        </div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>const constructors</strong> everywhere possible — prevents unnecessary rebuilds</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>RepaintBoundary</strong> around heavy widgets — isolates repaints to subtree</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>ListView.builder</strong> — never ListView with all items at once</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Minimize <strong>setState scope</strong> — only rebuild the smallest widget that needs update</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>opacity animations</strong> without RepaintBoundary — use FadeTransition instead</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Shader warm-up</strong> with <code>ShaderWarmUp</code> — prevents first-run jank from shader compilation</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>Impeller</strong> (new renderer) on iOS/Android — eliminates shader compilation jank</div></div>
+        </div>
+      </div>
+
+      <!-- React Native -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon">⚛️</div>
+          <div class="card-title">React Native</div>
+          <span class="badge rn">React Native</span>
+        </div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>FlatList / SectionList</strong> — never ScrollView with map() for long lists</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>React.memo + useMemo + useCallback</strong> — prevent unnecessary JS re-renders</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Move animations to <strong>Native thread</strong> via Animated.useNativeDriver: true</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>Reanimated 2/3</strong> for complex animations — runs on UI thread, zero JS bridge cost</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>New Architecture</strong> (JSI + Fabric) — direct JS↔Native calls, no async bridge</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>InteractionManager.runAfterInteractions</strong> for heavy work post-animation</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Hermes engine</strong> enabled — faster startup, lower memory, better GC than JSC</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 3 — MEMORY MANAGEMENT
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div>
+        <div class="section-title">Memory Management</div>
+        <div class="section-desc">Leaks kill battery and cause crashes — most common cause of ANR and OOM errors</div>
+      </div>
+    </div>
+
+    <div class="cols2">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🤖</div><div class="card-title">Android</div><span class="badge and">Android</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>LeakCanary</strong> in debug builds — auto-detects and reports Activity/Fragment leaks</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Never hold <strong>Context reference</strong> in static fields — causes Activity leaks</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>WeakReference</strong> when callbacks hold Activity refs across async operations</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Bitmap management</strong> — use Glide/Coil with built-in lifecycle-aware caching</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Cancel <strong>Coroutines</strong> in onDestroy / viewModelScope auto-cancels on clear</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🍎</div><div class="card-title">iOS</div><span class="badge ios">iOS</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>[weak self]</strong> in closures — prevents retain cycles with self</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Instruments Leaks</strong> tool — run regularly to catch abandoned memory & cycles</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>strong delegate</strong> references — always declare delegates as <code>weak var</code></div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>NSCache</strong> over NSDictionary — auto-evicts under memory pressure</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>autoreleasepool</strong> in tight loops processing many objects</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">💙</div><div class="card-title">Flutter</div><span class="badge flu">Flutter</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Always <strong>dispose controllers</strong> — AnimationController, TextEditingController, StreamSubscription</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>StreamSubscription.cancel()</strong> in dispose() to avoid stream leaks</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Image.network</strong> caches in memory — use CachedNetworkImage with disk cache for large sets</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">DevTools Memory tab — take heap snapshots before/after user flows to spot regressions</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">⚛️</div><div class="card-title">React Native</div><span class="badge rn">React Native</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Remove event listeners</strong> in useEffect cleanup — DeviceEventEmitter, AppState, etc.</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>large objects in state/redux</strong> — store IDs, not full objects in component state</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>react-native-fast-image</strong> over Image for aggressive memory-aware caching</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Clear timers</strong> — always clearTimeout/clearInterval in useEffect cleanup</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 4 — NETWORK & DATA
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <div>
+        <div class="section-title">Network & Data</div>
+        <div class="section-desc">Latency is the enemy — minimize requests, maximize cache, compress everything</div>
+      </div>
+    </div>
+
+    <div class="cols3">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">📡</div><div class="card-title">Request Strategy</div><span class="badge all">All</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>HTTP/2</strong> multiplexing — single connection for multiple requests</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Pagination</strong> — cursor-based over offset. Load 20 items, not 200</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Debounce</strong> search inputs (300ms) — avoid request per keystroke</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Cancel inflight</strong> requests when screen leaves — use CancelToken/AbortController</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Batch API calls — GraphQL or composite endpoints over 10 REST calls</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">💾</div><div class="card-title">Caching Strategy</div><span class="badge all">All</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Stale-while-revalidate</strong> — show cached data immediately, refresh in background</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>ETag / Last-Modified</strong> headers — 304 Not Modified saves full payload download</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Android: <strong>OkHttp Cache</strong> — built-in disk cache with HTTP cache semantics</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">iOS: <strong>URLCache</strong> — configure memory + disk capacity appropriately</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>offline-first</strong> — SQLite/Room/CoreData as source of truth, sync to server</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🗜️</div><div class="card-title">Payload Optimization</div><span class="badge all">All</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>gzip / brotli</strong> compression on all JSON — 70-80% size reduction</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Protobuf / MessagePack</strong> over JSON for high-frequency data</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Images: <strong>WebP</strong> format — 25-34% smaller than JPEG at same quality</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Request <strong>only needed fields</strong> — GraphQL field selection or sparse fieldsets</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>CDN</strong> for static assets — serve images from edge close to user</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 5 — APP STARTUP
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">05</div>
+      <div>
+        <div class="section-title">App Startup Time</div>
+        <div class="section-desc">Cold start &lt;2s, warm start &lt;1s — first impressions decide if users stay</div>
+      </div>
+    </div>
+
+    <div class="cols4">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🤖</div><div class="card-title">Android</div><span class="badge and">Android</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>App Startup library</strong> — lazy-initialize components, not all at once</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Baseline Profiles</strong> — pre-compile hot paths, 30-40% faster cold start</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid work in <strong>Application.onCreate</strong> — defer until actually needed</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>SplashScreen API</strong> — instant splash, no blank white flash on launch</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🍎</div><div class="card-title">iOS</div><span class="badge ios">iOS</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Move work out of <strong>applicationDidFinishLaunching</strong> — target &lt;400ms</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>lazy var</strong> for expensive singletons — init on first use, not app start</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Reduce <strong>dylib count</strong> — merge frameworks, fewer dynamic libs = faster launch</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Background fetch</strong> pre-warms data — content ready before user opens app</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">💙</div><div class="card-title">Flutter</div><span class="badge flu">Flutter</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Deferred components</strong> — split app into loadable modules, download on demand</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>flutter build</strong> with <code>--tree-shake-icons</code> — removes unused icon glyphs</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Impeller</strong> engine — pre-compiled shaders, no startup jank on first render</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Minimize <strong>plugin initializations</strong> in main() — use async init patterns</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">⚛️</div><div class="card-title">React Native</div><span class="badge rn">React Native</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Hermes</strong> — pre-compiled bytecode ships in bundle, faster JS parse</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>RAM Bundles</strong> — load only required modules at startup, rest on demand</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Lazy-load <strong>heavy screens</strong> — React.lazy + Suspense for non-initial routes</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Reduce <strong>native module</strong> init — only auto-link modules you actually use</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 6 — BATTERY & BACKGROUND
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">06</div>
+      <div>
+        <div class="section-title">Battery & Background Work</div>
+        <div class="section-desc">Draining battery = 1-star reviews — do background work smartly</div>
+      </div>
+    </div>
+
+    <div class="cols2">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🔋</div><div class="card-title">Android Battery</div><span class="badge and">Android</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>WorkManager</strong> for background tasks — battery-aware, respects Doze mode</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>JobScheduler constraints</strong> — run sync only on WiFi + charging when possible</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Batch <strong>network requests</strong> — 1 wake-up for 10 requests vs 10 individual wake-ups</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>Battery Historian</strong> tool — visualize wakelocks, alarms, sync frequency</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>partial wakelocks</strong> — use FCM push to wake app, not polling</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🔋</div><div class="card-title">iOS Battery</div><span class="badge ios">iOS</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>BGTaskScheduler</strong> — system schedules background work at optimal times</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Background App Refresh</strong> — request time wisely, system may deny in low-power mode</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>signpost intervals</strong> in Instruments Energy log to find expensive operations</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Avoid <strong>CLLocationManager</strong> with high accuracy when approximate is sufficient</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>URLSession background</strong> tasks for large uploads/downloads</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 7 — PERFORMANCE TARGETS
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">07</div>
+      <div>
+        <div class="section-title">Performance Targets & Budgets</div>
+        <div class="section-desc">You can't improve what you don't measure — set clear budgets and track them in CI</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="padding: 0;">
+        <table class="metric-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>🟢 Good</th>
+              <th>🟡 Needs Work</th>
+              <th>🔴 Critical</th>
+              <th>How to Measure</th>
+              <th>Platforms</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cold Start Time</td>
+              <td><span class="target green">&lt; 1.5s</span></td>
+              <td><span class="target amber">1.5–3s</span></td>
+              <td><span class="target red">&gt; 3s</span></td>
+              <td>adb logcat / Instruments / Firebase Perf</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>Frame Rate (UI)</td>
+              <td><span class="target green">60 fps</span></td>
+              <td><span class="target amber">45–59 fps</span></td>
+              <td><span class="target red">&lt; 30 fps</span></td>
+              <td>Profiler / DevTools Timeline / gfxinfo</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>Frame Budget</td>
+              <td><span class="target green">&lt; 16ms</span></td>
+              <td><span class="target amber">16–32ms</span></td>
+              <td><span class="target red">&gt; 32ms</span></td>
+              <td>GPU Profiler / Flutter Timeline</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>App Size (Android)</td>
+              <td><span class="target green">&lt; 10MB APK</span></td>
+              <td><span class="target amber">10–25MB</span></td>
+              <td><span class="target red">&gt; 50MB</span></td>
+              <td>APK Analyzer in Android Studio</td>
+              <td><span class="badge and">Android</span></td>
+            </tr>
+            <tr>
+              <td>App Size (iOS)</td>
+              <td><span class="target green">&lt; 30MB OTA</span></td>
+              <td><span class="target amber">30–100MB</span></td>
+              <td><span class="target red">&gt; 200MB</span></td>
+              <td>Xcode Size Report / App Store Connect</td>
+              <td><span class="badge ios">iOS</span></td>
+            </tr>
+            <tr>
+              <td>Memory (Foreground)</td>
+              <td><span class="target green">&lt; 100MB</span></td>
+              <td><span class="target amber">100–200MB</span></td>
+              <td><span class="target red">&gt; 300MB</span></td>
+              <td>Memory Profiler / Instruments Allocations</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>ANR / Freeze Rate</td>
+              <td><span class="target green">&lt; 0.1%</span></td>
+              <td><span class="target amber">0.1–0.5%</span></td>
+              <td><span class="target red">&gt; 0.5%</span></td>
+              <td>Firebase Crashlytics / Play Console</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>Crash-free Sessions</td>
+              <td><span class="target green">&gt; 99.5%</span></td>
+              <td><span class="target amber">98–99.5%</span></td>
+              <td><span class="target red">&lt; 98%</span></td>
+              <td>Firebase Crashlytics / Sentry</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>API Response Time</td>
+              <td><span class="target green">&lt; 200ms</span></td>
+              <td><span class="target amber">200–500ms</span></td>
+              <td><span class="target red">&gt; 1s</span></td>
+              <td>Network Profiler / Charles Proxy</td>
+              <td><span class="badge all">All</span></td>
+            </tr>
+            <tr>
+              <td>JS Thread (RN)</td>
+              <td><span class="target green">&lt; 16ms/frame</span></td>
+              <td><span class="target amber">16–50ms</span></td>
+              <td><span class="target red">&gt; 100ms</span></td>
+              <td>Perf Monitor overlay / Flipper</td>
+              <td><span class="badge rn">React Native</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 8 — IMAGE & ASSET OPTIMIZATION
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">08</div>
+      <div>
+        <div class="section-title">Image & Asset Optimization</div>
+        <div class="section-desc">Images are typically 60–80% of app download size and a top cause of memory issues</div>
+      </div>
+    </div>
+
+    <div class="cols2">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🖼️</div><div class="card-title">Loading Libraries</div></div>
+        <div class="card-body">
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>Coil</strong> — Kotlin-first, coroutine-backed, lifecycle-aware</div>
+            <div class="rule-badges"><span class="badge and">Android</span></div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>Glide</strong> — battle-tested, transforms, powerful disk cache</div>
+            <div class="rule-badges"><span class="badge and">Android</span></div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>SDWebImage / Nuke</strong> — async download, memory + disk cache, prefetch</div>
+            <div class="rule-badges"><span class="badge ios">iOS</span></div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>CachedNetworkImage</strong> — disk + memory cache, placeholder support</div>
+            <div class="rule-badges"><span class="badge flu">Flutter</span></div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>react-native-fast-image</strong> — priority loading, preload API, cache control</div>
+            <div class="rule-badges"><span class="badge rn">React Native</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">✂️</div><div class="card-title">Size & Format Best Practices</div><span class="badge all">All</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>WebP</strong> for photos — 25% smaller than JPEG, lossless option available</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>SVG / vector drawables</strong> for icons — scale to any size, tiny file</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Resize on server</strong> — serve @2x for Retina, @1x for low-density — not one giant image</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Lazy-load</strong> images below the fold — load as user scrolls, not all upfront</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Use <strong>blurhash / placeholders</strong> — show colored blur while image loads, prevents layout shift</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 9 — MONITORING IN PRODUCTION
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">09</div>
+      <div>
+        <div class="section-title">Production Monitoring Tools</div>
+        <div class="section-desc">What you can't see in staging will hurt you in production</div>
+      </div>
+    </div>
+
+    <div class="cols3">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🔥</div><div class="card-title">Firebase Performance</div><span class="badge all">All</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Automatic <strong>app start time, screen render, HTTP traces</strong> with zero config</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Custom traces</strong> — wrap any code block to measure its performance in prod</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Segment by <strong>country, device, OS version</strong> — find slow devices specifically</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🐛</div><div class="card-title">Sentry / Crashlytics</div><span class="badge all">All</span></div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>Performance transactions</strong> — trace slow operations with spans and breadcrumbs</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text"><strong>ANR + slow frame detection</strong> — auto-flagged with full stack trace in Sentry</div></div>
+          <div class="rule-item"><div class="rule-dot"></div><div class="rule-text">Set <strong>performance budgets</strong> — alert when p95 latency exceeds threshold</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-icon">📊</div><div class="card-title">Platform-Native Tools</div></div>
+        <div class="card-body">
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>Play Console Android Vitals</strong> — ANR, crash, slow frame rates across real user devices</div>
+            <div class="rule-badges"><span class="badge and">Android</span></div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>Xcode Organizer</strong> — energy, launch time, hang rate, disk writes from real App Store users</div>
+            <div class="rule-badges"><span class="badge ios">iOS</span></div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-dot"></div>
+            <div class="rule-text"><strong>MetricKit</strong> — system-provided perf metrics delivered to your app from iOS diagnostics</div>
+            <div class="rule-badges"><span class="badge ios">iOS</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 10 — QUICK PROBLEM SOLVER
+  ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">10</div>
+      <div>
+        <div class="section-title">Quick Problem → Solution</div>
+        <div class="section-desc">Symptom-first lookup — find the fix without reading everything above</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="padding: 0;">
+        <table class="problem-solution-table">
+          <thead>
+            <tr>
+              <th>Problem / Symptom</th>
+              <th>Solutions & Tools</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>App feels janky / choppy scrolling</strong></td>
+              <td>RecyclerView DiffUtil · FlatList · ListView.builder · RepaintBoundary</td>
+            </tr>
+            <tr>
+              <td><strong>App crashes with OOM error</strong></td>
+              <td>Bitmap recycling · Glide/Coil/SDWebImage · NSCache · LeakCanary</td>
+            </tr>
+            <tr>
+              <td><strong>App takes forever to start</strong></td>
+              <td>Baseline Profiles · lazy init · RAM Bundles · Hermes · App Startup lib</td>
+            </tr>
+            <tr>
+              <td><strong>Battery drain complaints</strong></td>
+              <td>WorkManager · BGTaskScheduler · batch requests · Battery Historian</td>
+            </tr>
+            <tr>
+              <td><strong>API calls are slow</strong></td>
+              <td>HTTP/2 · gzip · pagination · caching · CDN · reduce payload fields</td>
+            </tr>
+            <tr>
+              <td><strong>React Native bridge bottleneck</strong></td>
+              <td>JSI (New Architecture) · useNativeDriver:true · Reanimated 3 · Hermes</td>
+            </tr>
+            <tr>
+              <td><strong>Flutter rebuilds too many widgets</strong></td>
+              <td>const constructors · RepaintBoundary · minimize setState scope · ValueListenableBuilder</td>
+            </tr>
+            <tr>
+              <td><strong>Memory leak suspected</strong></td>
+              <td>LeakCanary · Instruments Leaks · [weak self] · dispose() controllers · remove listeners</td>
+            </tr>
+            <tr>
+              <td><strong>Images slow to load / memory heavy</strong></td>
+              <td>WebP format · resize on server · lazy load · CachedNetworkImage · FastImage</td>
+            </tr>
+            <tr>
+              <td><strong>Can't find the perf bottleneck</strong></td>
+              <td>Android Profiler · Instruments Time Profiler · Flutter DevTools · Flipper</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>Mobile Performance Optimization — Android · iOS · Flutter · React Native</span>
+    <span>Profile first. Measure always. Optimize last.</span>
+  </footer>
+
+</div>
+</body>
+</html>
