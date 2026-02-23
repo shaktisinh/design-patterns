@@ -156,7 +156,7 @@ Edit js/script.js when:
 ✓ Interactive 5-question quiz
 ✓ SOLID principles section
 ✓ Architectural patterns
-✓ Cheatsheet reference table
+✓ Tips reference table
 ✓ All original functionality 100% working
 
 ═══════════════════════════════════════════════════════════════════════════════
