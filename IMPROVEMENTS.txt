@@ -94,7 +94,7 @@ HTML (index.html) - 1,769 lines
 │   ├── Navigation
 │   ├── 5 main sections (Overview, Creational, Structural, Behavioral, Solid)
 │   ├── Architectural patterns section
-│   ├── Cheatsheet table
+│   ├── Tips table
 │   ├── Interactive quiz
 │   └── Footer
 └── Single script tag referencing js/script.js
